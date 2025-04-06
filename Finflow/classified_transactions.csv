@@ -1,0 +1,51 @@
+id,amount,currency,method,description,created_at,predicted_category
+pay_mock_0,366.06,INR,upi,Electricity Bill,2025-03-31 16:46:47,Entertainment
+pay_mock_1,137.15,INR,upi,Amazon Purchase,2025-03-28 16:46:47,Shopping
+pay_mock_2,357.97,INR,netbanking,BigBasket,2025-04-05 16:46:47,Shopping
+pay_mock_3,21.61,INR,wallet,Zomato,2025-03-15 16:46:47,Entertainment
+pay_mock_4,430.68,INR,wallet,Electricity Bill,2025-03-14 16:46:47,Entertainment
+pay_mock_5,440.98,INR,netbanking,Netflix Subscription,2025-03-07 16:46:47,Entertainment
+pay_mock_6,285.72,INR,upi,Electricity Bill,2025-03-09 16:46:47,Entertainment
+pay_mock_7,94.25,INR,upi,BigBasket,2025-03-21 16:46:47,Shopping
+pay_mock_8,316.77,INR,upi,Uber Ride,2025-03-08 16:46:47,Entertainment
+pay_mock_9,119.46,INR,upi,Starbucks Coffee,2025-03-06 16:46:47,Entertainment
+pay_mock_10,445.87,INR,netbanking,Uber Ride,2025-03-13 16:46:47,Entertainment
+pay_mock_11,184.55,INR,upi,Uber Ride,2025-03-13 16:46:47,Entertainment
+pay_mock_12,207.92,INR,upi,BigBasket,2025-03-11 16:46:47,Shopping
+pay_mock_13,54.43,INR,card,Starbucks Coffee,2025-03-20 16:46:47,Entertainment
+pay_mock_14,449.75,INR,wallet,Starbucks Coffee,2025-03-28 16:46:47,Entertainment
+pay_mock_15,30.81,INR,wallet,Zomato,2025-04-01 16:46:47,Entertainment
+pay_mock_16,69.13,INR,card,Uber Ride,2025-03-10 16:46:47,Entertainment
+pay_mock_17,269.78,INR,netbanking,Zomato,2025-03-10 16:46:47,Entertainment
+pay_mock_18,476.39,INR,card,Netflix Subscription,2025-03-25 16:46:47,Entertainment
+pay_mock_19,87.7,INR,wallet,Uber Ride,2025-03-16 16:46:47,Entertainment
+pay_mock_20,212.34,INR,upi,BigBasket,2025-03-18 16:46:47,Shopping
+pay_mock_21,29.86,INR,upi,Recharge,2025-04-04 16:46:47,Entertainment
+pay_mock_22,429.6,INR,wallet,Starbucks Coffee,2025-03-12 16:46:47,Entertainment
+pay_mock_23,418.06,INR,upi,Netflix Subscription,2025-03-20 16:46:47,Entertainment
+pay_mock_24,51.64,INR,card,Electricity Bill,2025-03-09 16:46:47,Entertainment
+pay_mock_25,327.05,INR,wallet,Netflix Subscription,2025-04-03 16:46:47,Entertainment
+pay_mock_26,191.18,INR,wallet,Starbucks Coffee,2025-04-05 16:46:47,Entertainment
+pay_mock_27,412.2,INR,upi,Zomato,2025-03-23 16:46:47,Entertainment
+pay_mock_28,210.13,INR,netbanking,Zomato,2025-03-16 16:46:47,Entertainment
+pay_mock_29,488.71,INR,upi,Uber Ride,2025-03-23 16:46:47,Entertainment
+pay_mock_30,102.83,INR,card,Amazon Purchase,2025-03-24 16:46:47,Shopping
+pay_mock_31,277.55,INR,wallet,Amazon Purchase,2025-03-07 16:46:47,Shopping
+pay_mock_32,464.93,INR,upi,BigBasket,2025-03-09 16:46:47,Shopping
+pay_mock_33,177.15,INR,upi,Recharge,2025-03-27 16:46:47,Entertainment
+pay_mock_34,238.46,INR,card,Swiggy Order,2025-03-27 16:46:47,Entertainment
+pay_mock_35,176.99,INR,netbanking,Zomato,2025-04-02 16:46:47,Entertainment
+pay_mock_36,497.31,INR,wallet,Starbucks Coffee,2025-03-30 16:46:47,Entertainment
+pay_mock_37,417.76,INR,wallet,Recharge,2025-03-07 16:46:47,Entertainment
+pay_mock_38,50.09,INR,wallet,Zomato,2025-03-13 16:46:47,Entertainment
+pay_mock_39,432.11,INR,wallet,Starbucks Coffee,2025-03-11 16:46:47,Entertainment
+pay_mock_40,200.69,INR,card,Recharge,2025-04-04 16:46:47,Entertainment
+pay_mock_41,260.77,INR,netbanking,Starbucks Coffee,2025-03-11 16:46:47,Entertainment
+pay_mock_42,41.84,INR,card,Recharge,2025-03-27 16:46:47,Entertainment
+pay_mock_43,474.85,INR,upi,Starbucks Coffee,2025-04-03 16:46:47,Entertainment
+pay_mock_44,450.26,INR,wallet,Uber Ride,2025-03-06 16:46:47,Entertainment
+pay_mock_45,371.01,INR,netbanking,BigBasket,2025-03-27 16:46:47,Shopping
+pay_mock_46,263.6,INR,netbanking,Electricity Bill,2025-04-02 16:46:47,Entertainment
+pay_mock_47,255.72,INR,upi,Starbucks Coffee,2025-03-14 16:46:47,Entertainment
+pay_mock_48,232.91,INR,wallet,Recharge,2025-03-09 16:46:47,Entertainment
+pay_mock_49,487.61,INR,netbanking,Recharge,2025-03-23 16:46:47,Entertainment
