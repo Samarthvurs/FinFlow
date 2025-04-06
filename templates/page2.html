@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monthly Summary - FinFlow</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+
+<body>
+    <header>
+        <h1>Monthly Summary</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/page1">Weekly Summary</a>
+            <a href="/page2">Monthly Summary</a>
+            <a href="/login" id="login-link" style="display: none;">Login</a>
+            <a href="#" id="logout-link">Logout</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div id="not-logged-in" class="full-width-box" style="display: none;">
+            <h2>Please Login</h2>
+            <p>You need to be logged in to view this page. Redirecting to login...</p>
+        </div>
+
+        <div id="content">
+            <div class="box">
+                <h2>Monthly Spending</h2>
+                <p id="monthly-spent">Loading...</p>
+                <p id="monthly-remaining">Loading remaining budget...</p>
+            </div>
+
+            <div class="box">
+                <h2>Spending Recommendations</h2>
+                <div id="recommendations">
+                    <p>Enter your income to get personalized spending recommendations:</p>
+                    <div class="form-group">
+                        <input type="number" id="income-input" placeholder="Monthly Income (₹)" min="1000">
+                        <button id="predict-btn" class="btn">Get Recommendations</button>
+                    </div>
+                    <div id="prediction-results"></div>
+                </div>
+            </div>
+
+            <div class="box">
+                <h2>Monthly Transactions</h2>
+                <table id="transactions-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactions-body">
+                        <tr>
+                            <td colspan="4">Loading transactions...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Check if user is logged in
+        function checkLoginStatus() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+
+            if (!isLoggedIn) {
+                document.getElementById('not-logged-in').style.display = 'block';
+                document.getElementById('content').style.display = 'none';
+
+                // Redirect to login after a short delay
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                return;
+            }
+
+            // Update UI for logged in users
+            document.getElementById('login-link').style.display = 'none';
+            document.getElementById('logout-link').style.display = 'inline-block';
+
+            // Load data
+            loadData();
+        }
+
+        // Logout functionality
+        document.getElementById('logout-link').addEventListener('click', function (e) {
+            e.preventDefault();
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userEmail');
+            window.location.href = '/';
+        });
+
+        function loadData() {
+            // Fetch monthly summary data
+            fetch('/api/summary')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('monthly-spent').textContent = '₹' + data.monthly_spent.toFixed(2);
+                    document.getElementById('monthly-remaining').textContent = 'Remaining: ₹' + data.amount_left.toFixed(2);
+                })
+                .catch(error => {
+                    console.error('Error fetching summary:', error);
+                    document.getElementById('monthly-spent').textContent = 'Error loading data';
+                });
+
+            // Load transactions
+            fetch('/api/transactions')
+                .then(response => response.json())
+                .then(transactions => {
+                    const tbody = document.getElementById('transactions-body');
+                    tbody.innerHTML = '';
+
+                    if (transactions.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4">No transactions found</td></tr>';
+                        return;
+                    }
+
+                    transactions.forEach(txn => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${txn.id}</td>
+                            <td>${txn.category}</td>
+                            <td>₹${txn.amount.toFixed(2)}</td>
+                            <td>${txn.created_at || 'N/A'}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching transactions:', error);
+                    document.getElementById('transactions-body').innerHTML =
+                        '<tr><td colspan="4">Error loading transactions</td></tr>';
+                });
+        }
+
+        // Get spending recommendations
+        document.getElementById('predict-btn').addEventListener('click', function () {
+            const income = document.getElementById('income-input').value;
+            if (!income || income < 1000) {
+                alert('Please enter a valid income (minimum ₹1000)');
+                return;
+            }
+
+            fetch(`/api/predict?income=${income}`)
+                .then(response => response.json())
+                .then(data => {
+                    const resultsDiv = document.getElementById('prediction-results');
+                    if (data.error) {
+                        resultsDiv.innerHTML = `<p class="error">${data.error}</p>`;
+                    } else {
+                        let html = '<h3>Recommended Monthly Limits</h3>';
+                        data.forEach(item => {
+                            html += `<div class="recommendation-item">
+                                <span>${item.category}</span>
+                                <span>₹${item.limit.toFixed(2)} (${item.count} transactions)</span>
+                            </div>`;
+                        });
+                        resultsDiv.innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error getting predictions:', error);
+                    document.getElementById('prediction-results').innerHTML = '<p class="error">Failed to get recommendations</p>';
+                });
+        });
+
+        // Check login status when page loads
+        checkLoginStatus();
+    </script>
+</body>
+
+</html>

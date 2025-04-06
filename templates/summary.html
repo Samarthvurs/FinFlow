@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Summary - FinFlow</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+
+<body>
+    <header>
+        <h1>Financial Summary</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/page1">Weekly Summary</a>
+            <a href="/page2">Monthly Summary</a>
+            <a href="/login">Login</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="full-width-box">
+            <h2>Your Financial Overview</h2>
+            <p>Welcome to the FinFlow financial summary. Here you can get a quick overview of your finances.</p>
+        </div>
+
+        <div class="box-container">
+            <div class="box">
+                <h3>Weekly Summary</h3>
+                <p>View your weekly spending trends</p>
+                <a href="/page1" class="btn">Go to Weekly</a>
+            </div>
+            <div class="box">
+                <h3>Monthly Overview</h3>
+                <p>Review your monthly finances and get recommendations</p>
+                <a href="/page2" class="btn">Go to Monthly</a>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

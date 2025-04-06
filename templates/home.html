@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FinFlow - Smart Finance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+
+<body>
+    <header>
+        <h1>FinFlow</h1>
+        <nav id="main-nav">
+            <a href="/">Home</a>
+            <a href="/page1">Weekly Summary</a>
+            <a href="/page2">Monthly Summary</a>
+            <a href="/login" id="login-link">Login</a>
+            <a href="/signup" id="signup-link">Sign Up</a>
+            <a href="#" id="logout-link" style="display: none;">Logout</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div id="welcome-message" class="full-width-box" style="display: none;">
+            <h2>Welcome back, <span id="user-email">User</span>!</h2>
+            <p>Here's your financial overview for today.</p>
+        </div>
+
+        <div id="not-logged-in" class="full-width-box">
+            <h2>Welcome to FinFlow</h2>
+            <p>Please <a href="/login">login</a> or <a href="/signup">sign up</a> to access your financial dashboard.
+            </p>
+        </div>
+
+        <div id="dashboard" style="display: none;">
+            <div class="box">
+                <h2>Total Balance</h2>
+                <p id="balance">Loading...</p>
+            </div>
+            <div class="box-container">
+                <div class="box">
+                    <h3>Net Income:</h3>
+                    <p id="income">Loading...</p>
+                </div>
+                <div class="box">
+                    <h3>Net Expenditure:</h3>
+                    <p id="expenditure">Loading...</p>
+                </div>
+            </div>
+            <div class="full-width-box">
+                <p>SUMMARY</p>
+                <a href="/page1">WEEKLY SUMMARY</a>
+                <a href="/page2">MONTHLY SUMMARY</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Check if user is logged in
+        function checkLoginStatus() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const userEmail = localStorage.getItem('userEmail') || 'User';
+
+            // Update UI based on login status
+            document.getElementById('login-link').style.display = isLoggedIn ? 'none' : 'inline-block';
+            document.getElementById('signup-link').style.display = isLoggedIn ? 'none' : 'inline-block';
+            document.getElementById('logout-link').style.display = isLoggedIn ? 'inline-block' : 'none';
+
+            document.getElementById('welcome-message').style.display = isLoggedIn ? 'block' : 'none';
+            document.getElementById('not-logged-in').style.display = isLoggedIn ? 'none' : 'block';
+            document.getElementById('dashboard').style.display = isLoggedIn ? 'block' : 'none';
+
+            document.getElementById('user-email').textContent = userEmail;
+
+            // Only fetch data if logged in
+            if (isLoggedIn) {
+                fetchSummaryData();
+            }
+        }
+
+        // Logout functionality
+        document.getElementById('logout-link').addEventListener('click', function (e) {
+            e.preventDefault();
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userEmail');
+            checkLoginStatus();
+        });
+
+        // Fetch summary data from API
+        function fetchSummaryData() {
+            fetch('/api/summary')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('expenditure').textContent = '₹' + data.monthly_spent.toFixed(2);
+                    document.getElementById('income').textContent = '₹5000.00'; // Default value
+                    document.getElementById('balance').textContent = '₹' + data.amount_left.toFixed(2);
+                })
+                .catch(error => {
+                    console.error('Error fetching summary:', error);
+                });
+        }
+
+        // Check login status when page loads
+        checkLoginStatus();
+    </script>
+</body>
+
+</html>
