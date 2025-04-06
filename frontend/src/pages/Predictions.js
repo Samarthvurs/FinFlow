@@ -64,17 +64,13 @@ function Predictions() {
     setSuccess(false);
     
     try {
-      // Try with 0.0.0.0 URL first
       console.log('Sending prediction request for income:', income);
-      const apiUrl = `http://0.0.0.0:8000/predict-limits?income=${parseFloat(income)}`;
-      console.log('Attempting with URL:', apiUrl);
+      const apiUrl = `http://127.0.0.1:8000/predict-limits?income=${parseFloat(income)}`;
+      console.log('Requesting from:', apiUrl);
       
-      const response = await axios.get(
-        apiUrl,
-        { timeout: 8000 } // 8 second timeout
-      );
+      const response = await axios.get(apiUrl, { timeout: 10000 });
       
-      console.log('Prediction response:', response.data);
+      console.log('Prediction response received:', response.data);
       
       if (response.data && response.data.predictions && validateData(response.data.predictions)) {
         setPredictions(response.data.predictions);
@@ -83,31 +79,9 @@ function Predictions() {
         throw new Error('Invalid data format received from server');
       }
     } catch (error) {
-      console.error('First attempt error:', error);
-      
-      try {
-        // Try with localhost as fallback
-        const fallbackUrl = `http://localhost:8000/predict-limits?income=${parseFloat(income)}`;
-        console.log('Attempting with fallback URL:', fallbackUrl);
-        
-        const fallbackResponse = await axios.get(
-          fallbackUrl,
-          { timeout: 5000 }
-        );
-        
-        if (fallbackResponse.data && fallbackResponse.data.predictions && 
-            validateData(fallbackResponse.data.predictions)) {
-          setPredictions(fallbackResponse.data.predictions);
-          setSuccess(true);
-          return; // Exit early if fallback worked
-        } else {
-          throw new Error('Invalid data format from fallback server');
-        }
-      } catch (fallbackError) {
-        console.error('Fallback attempt error:', fallbackError);
-        setError('Could not connect to AI prediction service. Using built-in calculations instead.');
-        createFallbackPredictions();
-      }
+      console.error('Prediction request failed:', error);
+      setError('Using default calculations. Make sure the backend server is running.');
+      createFallbackPredictions();
     } finally {
       setLoading(false);
     }

@@ -80,23 +80,17 @@ function LimitsSetupDialog({ open, onClose, income = null, isFirstTimeSetup = fa
     setError('');
     
     try {
-      // First try with the 0.0.0.0 URL which is how the server identifies itself
-      const apiUrl = `http://0.0.0.0:8000/predict-limits?income=${parseFloat(currentIncome)}`;
-      console.log('Attempting AI prediction with URL:', apiUrl);
+      // Use 127.0.0.1 which is more reliable than 0.0.0.0
+      const apiUrl = `http://127.0.0.1:8000/predict-limits?income=${parseFloat(currentIncome)}`;
+      console.log('Trying prediction request to:', apiUrl);
       
-      const response = await axios.get(
-        apiUrl,
-        { timeout: 8000 } // Increase timeout to 8 seconds
-      );
-      
-      console.log('Received AI prediction response:', response.data);
+      const response = await axios.get(apiUrl, { timeout: 10000 });
       
       if (response.data && response.data.predictions && Array.isArray(response.data.predictions)) {
         const predictedLimits = {};
         
-        // Convert the predictions to the format we need
         response.data.predictions.forEach(item => {
-          if (Array.isArray(item) && item.length >= 2 && item[0] && !isNaN(item[1])) {
+          if (Array.isArray(item) && item.length >= 2) {
             predictedLimits[item[0]] = parseFloat(item[1]);
           }
         });
@@ -104,12 +98,9 @@ function LimitsSetupDialog({ open, onClose, income = null, isFirstTimeSetup = fa
         // Make sure we have values for all categories
         categories.forEach(category => {
           if (!predictedLimits[category] || isNaN(predictedLimits[category])) {
-            // Default to 10% of income if prediction is missing or invalid
             predictedLimits[category] = parseFloat(currentIncome) * 0.1;
           }
         });
-        
-        console.log('Processed AI predictions:', predictedLimits);
         
         setPredictedLimits(predictedLimits);
         setLimits(predictedLimits);
@@ -125,51 +116,10 @@ function LimitsSetupDialog({ open, onClose, income = null, isFirstTimeSetup = fa
     } catch (err) {
       console.error('Error predicting limits:', err);
       
-      try {
-        // Try localhost as a fallback
-        const fallbackUrl = `http://localhost:8000/predict-limits?income=${parseFloat(currentIncome)}`;
-        console.log('Attempting with fallback URL:', fallbackUrl);
-        
-        const fallbackResponse = await axios.get(
-          fallbackUrl,
-          { timeout: 5000 }
-        );
-        
-        if (fallbackResponse.data && fallbackResponse.data.predictions) {
-          const predictedLimits = {};
-          
-          fallbackResponse.data.predictions.forEach(item => {
-            if (Array.isArray(item) && item.length >= 2) {
-              predictedLimits[item[0]] = parseFloat(item[1]);
-            }
-          });
-          
-          // Make sure we have values for all categories
-          categories.forEach(category => {
-            if (!predictedLimits[category] || isNaN(predictedLimits[category])) {
-              predictedLimits[category] = parseFloat(currentIncome) * 0.1;
-            }
-          });
-          
-          setPredictedLimits(predictedLimits);
-          setLimits(predictedLimits);
-          setSuccess('AI predicted limits based on your income');
-          
-          if (isFirstTimeSetup && activeStep === 0) {
-            setActiveStep(1);
-          }
-          
-          return; // Exit early if fallback worked
-        }
-      } catch (fallbackErr) {
-        console.error('Fallback prediction also failed:', fallbackErr);
-      }
-      
-      // If we reach here, both attempts failed - use hardcoded calculations
+      // Create fallback limits directly
       const fallbackLimits = {};
       const income = parseFloat(currentIncome);
       
-      // Use fixed percentages based on typical spending patterns
       fallbackLimits['Food'] = income * 0.25;
       fallbackLimits['Transport'] = income * 0.15;
       fallbackLimits['Shopping'] = income * 0.20;
@@ -178,9 +128,7 @@ function LimitsSetupDialog({ open, onClose, income = null, isFirstTimeSetup = fa
       
       setPredictedLimits(fallbackLimits);
       setLimits(fallbackLimits);
-      
-      // Show a helpful message explaining we're using local calculations
-      setError('Could not connect to AI prediction service. Using built-in calculations instead.');
+      setError('Using default calculations. Make sure the backend server is running.');
       
       // Still move to next step despite the error
       if (isFirstTimeSetup && activeStep === 0) {
