@@ -17,6 +17,12 @@ import {
   MenuItem,
   Divider,
   Button,
+  Fab,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -26,7 +32,9 @@ import {
   Payment as PaymentIcon,
   AccountCircle as AccountCircleIcon,
   ExitToApp as LogoutIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
 const drawerWidth = 240;
@@ -37,6 +45,18 @@ function Layout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
+  
+  // States for Add Transaction dialog
+  const [openAddTransaction, setOpenAddTransaction] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [newTransaction, setNewTransaction] = useState({
+    category: '',
+    amount: '',
+    description: '',
+    method: '',
+  });
+  const [loading, setLoading] = useState(false);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -59,6 +79,61 @@ function Layout({ children }) {
     handleMenuClose();
     // Navigate to profile page (if you create one)
     // navigate('/profile');
+  };
+
+  // Add Transaction Dialog handlers
+  const handleOpenAddTransaction = async () => {
+    try {
+      const [catResponse, methodResponse] = await Promise.all([
+        axios.get('http://localhost:8000/categories'),
+        axios.get('http://localhost:8000/payment-methods'),
+      ]);
+      setCategories(catResponse.data.categories || []);
+      setPaymentMethods(methodResponse.data.methods || []);
+      setOpenAddTransaction(true);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      // Open dialog anyway, but with empty categories/methods
+      setCategories([]);
+      setPaymentMethods([]);
+      setOpenAddTransaction(true);
+    }
+  };
+
+  const handleCloseAddTransaction = () => {
+    setOpenAddTransaction(false);
+    setNewTransaction({
+      category: '',
+      amount: '',
+      description: '',
+      method: '',
+    });
+  };
+
+  const handleSubmitTransaction = async () => {
+    if (!newTransaction.category || !newTransaction.amount || !newTransaction.method) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // Ensure amount is a number
+      const transactionData = {
+        ...newTransaction,
+        amount: parseFloat(newTransaction.amount)
+      };
+      
+      await axios.post('http://localhost:8000/add-transaction', transactionData);
+      handleCloseAddTransaction();
+      // Optionally refresh the current page or show a success message
+      alert('Transaction added successfully!');
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+      alert('Failed to add transaction. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const menuItems = [
@@ -208,6 +283,88 @@ function Layout({ children }) {
       >
         <Toolbar />
         {children}
+        
+        {/* Floating Action Button for Adding Transactions */}
+        {isAuthenticated && (
+          <Fab
+            color="primary"
+            aria-label="add transaction"
+            sx={{
+              position: 'fixed',
+              bottom: 16,
+              right: 16,
+            }}
+            onClick={handleOpenAddTransaction}
+          >
+            <AddIcon />
+          </Fab>
+        )}
+        
+        {/* Add Transaction Dialog */}
+        <Dialog open={openAddTransaction} onClose={handleCloseAddTransaction}>
+          <DialogTitle>Add New Transaction</DialogTitle>
+          <DialogContent>
+            <TextField
+              select
+              label="Category"
+              value={newTransaction.category}
+              onChange={(e) => setNewTransaction({ ...newTransaction, category: e.target.value })}
+              fullWidth
+              margin="normal"
+              SelectProps={{
+                native: false,
+              }}
+            >
+              {categories.map((category) => (
+                <MenuItem key={category} value={category}>
+                  {category}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Amount"
+              type="number"
+              value={newTransaction.amount}
+              onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              label="Description"
+              value={newTransaction.description}
+              onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              select
+              label="Payment Method"
+              value={newTransaction.method}
+              onChange={(e) => setNewTransaction({ ...newTransaction, method: e.target.value })}
+              fullWidth
+              margin="normal"
+              SelectProps={{
+                native: false,
+              }}
+            >
+              {paymentMethods.map((method) => (
+                <MenuItem key={method} value={method}>
+                  {method}
+                </MenuItem>
+              ))}
+            </TextField>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseAddTransaction}>Cancel</Button>
+            <Button 
+              onClick={handleSubmitTransaction} 
+              color="primary"
+              disabled={loading}
+            >
+              {loading ? 'Adding...' : 'Add'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Box>
   );

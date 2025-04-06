@@ -30,6 +30,9 @@ function SpendingProgress({ transactions, limits, compact = false, onSetLimits }
   const categorySpending = {};
   transactions.forEach((txn) => {
     const category = txn.category || 'Uncategorized';
+    // Skip income transactions - they're not expenses
+    if (category === 'Income') return;
+    
     const amount = typeof txn.amount === 'number' ? txn.amount : parseFloat(txn.amount || 0);
     categorySpending[category] = (categorySpending[category] || 0) + amount;
   });
@@ -39,22 +42,24 @@ function SpendingProgress({ transactions, limits, compact = false, onSetLimits }
     const userLimits = limits || user?.limits;
     if (!userLimits) return [];
     
-    return userLimits.map(limit => {
-      const category = limit[0];
-      const limitAmount = limit[1];
-      const spent = categorySpending[category] || 0;
-      const percentage = Math.min(100, Math.round((spent / limitAmount) * 100));
-      
-      return {
-        category,
-        limit: limitAmount,
-        spent,
-        percentage,
-        remaining: Math.max(0, limitAmount - spent),
-        overspent: spent > limitAmount ? spent - limitAmount : 0,
-        status: percentage > 90 ? 'danger' : percentage > 75 ? 'warning' : 'good'
-      };
-    });
+    return userLimits
+      .filter(limit => limit[0] !== 'Income') // Exclude Income category from spending limits
+      .map(limit => {
+        const category = limit[0];
+        const limitAmount = limit[1];
+        const spent = categorySpending[category] || 0;
+        const percentage = Math.min(100, Math.round((spent / limitAmount) * 100));
+        
+        return {
+          category,
+          limit: limitAmount,
+          spent,
+          percentage,
+          remaining: Math.max(0, limitAmount - spent),
+          overspent: spent > limitAmount ? spent - limitAmount : 0,
+          status: percentage > 90 ? 'danger' : percentage > 75 ? 'warning' : 'good'
+        };
+      });
   };
 
   // Get status color

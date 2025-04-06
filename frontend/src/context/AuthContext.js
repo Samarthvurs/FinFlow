@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }) => {
       income: userData.income || 0,
       occupation: userData.occupation || '',
       preferredPaymentMethods: userData.preferredPaymentMethods || [],
-      isFirstLogin: userData.isFirstLogin ?? true,
+      isFirstLogin: userData.isFirstLogin === undefined ? true : userData.isFirstLogin,
       limits: userData.limits || null,
       createdAt: userData.createdAt || new Date().toISOString(),
       lastLogin: new Date().toISOString()
@@ -117,7 +117,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is on first login - we'll keep this but won't automatically show setup
   const isFirstLogin = () => {
-    return false; // Always return false since we no longer use automatic setup
+    return user?.isFirstLogin === true;
   };
 
   // Check if user has completed the income and limits setup

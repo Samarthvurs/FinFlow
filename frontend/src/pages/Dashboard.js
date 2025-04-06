@@ -48,6 +48,13 @@ function Dashboard() {
   const [currentTab, setCurrentTab] = useState(0);
   const navigate = useNavigate();
 
+  // Auto-show setup dialog for first-time users
+  useEffect(() => {
+    if (user && isFirstLogin() && (!user.income || !user.limits)) {
+      setOpenLimitsDialog(true);
+    }
+  }, [user, isFirstLogin]);
+
   // Fetch transactions when component mounts
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -113,6 +120,115 @@ function Dashboard() {
 
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);
+  };
+
+  // Generate demo transactions for current month
+  const generateMonthlyTransactions = async () => {
+    setLoading(true);
+    try {
+      // Check if limits are set
+      if (!user?.limits || user.limits.length === 0) {
+        alert("Please set up your income and spending limits before generating transactions.");
+        setOpenLimitsDialog(true);
+        setLoading(false);
+        return;
+      }
+
+      // Generate transactions for current month to date
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const demoTransactions = [];
+      const categories = user?.limits?.map(limit => limit[0]) || ['Food', 'Transport', 'Shopping', 'Utilities', 'Entertainment'];
+      
+      // Add income transaction on the 1st of the month
+      if (user?.income) {
+        demoTransactions.push({
+          category: 'Income',
+          amount: user.income,
+          description: 'Monthly Income',
+          method: 'Bank Transfer',
+          created_at: startOfMonth.toISOString(),
+        });
+      }
+      
+      // Create 20-30 random transactions
+      const numTransactions = Math.floor(Math.random() * 11) + 20;
+      
+      for (let i = 0; i < numTransactions; i++) {
+        const transactionDate = new Date(startOfMonth.getTime() + Math.random() * (now.getTime() - startOfMonth.getTime()));
+        const category = categories[Math.floor(Math.random() * categories.length)];
+        
+        // Amount based on category (using user limits if available)
+        let amount;
+        const userCategoryLimit = user?.limits?.find(limit => limit[0] === category)?.[1] || 0;
+        
+        switch (category) {
+          case 'Food':
+            amount = Math.round(Math.random() * (userCategoryLimit * 0.15)) + (userCategoryLimit * 0.05);
+            break;
+          case 'Transport':
+            amount = Math.round(Math.random() * (userCategoryLimit * 0.1)) + (userCategoryLimit * 0.03);
+            break;
+          case 'Shopping':
+            amount = Math.round(Math.random() * (userCategoryLimit * 0.25)) + (userCategoryLimit * 0.1);
+            break;
+          case 'Utilities':
+            amount = Math.round(Math.random() * (userCategoryLimit * 0.15)) + (userCategoryLimit * 0.1);
+            break;
+          case 'Entertainment':
+            amount = Math.round(Math.random() * (userCategoryLimit * 0.2)) + (userCategoryLimit * 0.05);
+            break;
+          default:
+            amount = Math.round(Math.random() * 1000) + 500;
+        }
+        
+        // Make sure amount is reasonable if no user limits
+        if (!userCategoryLimit) {
+          amount = Math.max(100, Math.min(5000, amount));
+        }
+        
+        // Payment methods
+        const paymentMethods = ['Cash', 'Credit Card', 'Debit Card', 'UPI', 'Net Banking'];
+        const method = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
+        
+        // Example transaction descriptions
+        const descriptions = {
+          'Food': ['Grocery shopping', 'Restaurant dinner', 'Food delivery', 'Cafe', 'Street food'],
+          'Transport': ['Uber ride', 'Metro ticket', 'Bus pass', 'Fuel', 'Taxi'],
+          'Shopping': ['Clothing purchase', 'Electronics', 'Home goods', 'Online order', 'Gift purchase'],
+          'Utilities': ['Electricity bill', 'Water bill', 'Internet bill', 'Phone bill', 'Gas bill'],
+          'Entertainment': ['Movie tickets', 'Streaming subscription', 'Concert tickets', 'Gaming', 'Sports event']
+        };
+        
+        const descriptionOptions = descriptions[category] || ['Miscellaneous purchase'];
+        const description = descriptionOptions[Math.floor(Math.random() * descriptionOptions.length)];
+        
+        demoTransactions.push({
+          category,
+          amount,
+          description,
+          method,
+          created_at: transactionDate.toISOString(),
+        });
+      }
+      
+      // Send transactions to server
+      for (const transaction of demoTransactions) {
+        await axios.post('http://localhost:8000/add-transaction', transaction);
+      }
+      
+      // Refresh transactions
+      const response = await axios.get('http://localhost:8000/transactions');
+      setTransactions(response.data || []);
+      calculatePoints(response.data || []);
+      
+      alert(`Successfully generated ${demoTransactions.length} transactions for ${now.toLocaleString('default', { month: 'long' })}`);
+    } catch (error) {
+      console.error('Error generating transactions:', error);
+      setError('Failed to generate transactions. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Render the main dashboard content
@@ -345,6 +461,17 @@ function Dashboard() {
         <Typography variant="h4">Dashboard</Typography>
         
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {/* Generate Transactions Button */}
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={generateMonthlyTransactions}
+            disabled={loading}
+            sx={{ mr: 2 }}
+          >
+            Generate Monthly Transactions
+          </Button>
+          
           <Badge 
             badgeContent={pointsEarned} 
             color="secondary"
@@ -389,7 +516,7 @@ function Dashboard() {
       <LimitsSetupDialog 
         open={openLimitsDialog} 
         onClose={handleLimitsDialogClose}
-        isFirstTimeSetup={false} // Never treat as first-time setup
+        isFirstTimeSetup={isFirstLogin()}
       />
     </Box>
   );

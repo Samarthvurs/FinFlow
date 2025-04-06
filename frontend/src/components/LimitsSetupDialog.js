@@ -30,6 +30,7 @@ const categories = ['Food', 'Transport', 'Shopping', 'Utilities', 'Entertainment
 
 function LimitsSetupDialog({ open, onClose, income = null, isFirstTimeSetup = false }) {
   const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
   const [currentIncome, setCurrentIncome] = useState(income || user?.income || '');
   const [incomeError, setIncomeError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,7 +39,6 @@ function LimitsSetupDialog({ open, onClose, income = null, isFirstTimeSetup = fa
   const [success, setSuccess] = useState('');
   const [activeStep, setActiveStep] = useState(0);
   const [predictedLimits, setPredictedLimits] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Initialize limits from user data or from prediction
@@ -205,16 +205,15 @@ function LimitsSetupDialog({ open, onClose, income = null, isFirstTimeSetup = fa
       // Then update via context
       updateUser(updatedUserData);
       
-      // For first-time setup, show the success message briefly before closing
-      if (isFirstTimeSetup) {
-        setTimeout(() => {
-          onClose();
-          window.location.reload(); // Force a complete refresh of the page
-        }, 1500);
-      } else {
-        // For regular updates, close immediately
+      // Close the dialog after a short delay to show the success message
+      setTimeout(() => {
         onClose();
-      }
+        
+        // Refresh the page for first-time setup to ensure all components update properly
+        if (isFirstTimeSetup) {
+          navigate('/dashboard');
+        }
+      }, 1500);
     } catch (error) {
       console.error('Error saving user data:', error);
       setError('Failed to save your settings. Please try again.');

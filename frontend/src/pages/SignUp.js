@@ -85,17 +85,18 @@ function SignUp() {
     setServerError('');
     
     try {
-      // Create user data
+      // Create user data with isFirstLogin flag set to true
       const userData = {
         name: formData.name,
         email: formData.email,
-        isFirstLogin: true
+        isFirstLogin: true, // Explicitly set first login flag
+        createdAt: new Date().toISOString()
       };
       
       // Login the user with our auth context
       login(userData);
       
-      // Redirect to dashboard where user will be prompted for income
+      // Redirect to dashboard where setup dialog will be shown automatically
       navigate('/dashboard');
     } catch (error) {
       setServerError(error.response?.data?.message || 'Failed to create account. Please try again.');
