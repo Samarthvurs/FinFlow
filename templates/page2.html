@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Monthly Summary - FinFlow</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <!-- Add Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -15,6 +17,7 @@
             <a href="/">Home</a>
             <a href="/page1">Weekly Summary</a>
             <a href="/page2">Monthly Summary</a>
+            <a href="/payment">Add Payment</a>
             <a href="/login" id="login-link" style="display: none;">Login</a>
             <a href="#" id="logout-link">Logout</a>
         </nav>
@@ -42,6 +45,17 @@
                         <button id="predict-btn" class="btn">Get Recommendations</button>
                     </div>
                     <div id="prediction-results"></div>
+                    <!-- Add chart canvas for visualization -->
+                    <div id="chart-container" style="display: none; margin-top: 20px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <div style="width: 48%;">
+                                <canvas id="limit-chart"></canvas>
+                            </div>
+                            <div style="width: 48%;">
+                                <canvas id="count-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -104,7 +118,12 @@
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('monthly-spent').textContent = '₹' + data.monthly_spent.toFixed(2);
-                    document.getElementById('monthly-remaining').textContent = 'Remaining: ₹' + data.amount_left.toFixed(2);
+
+                    // Use monthly limit from localStorage or default to 5000
+                    const monthlyLimit = localStorage.getItem('monthlyLimit') || '5000';
+                    const amountLeft = parseFloat(monthlyLimit) - data.monthly_spent;
+
+                    document.getElementById('monthly-remaining').textContent = 'Remaining: ₹' + amountLeft.toFixed(2);
                 })
                 .catch(error => {
                     console.error('Error fetching summary:', error);
@@ -141,6 +160,10 @@
                 });
         }
 
+        // Variables to store chart instances
+        let limitChart = null;
+        let countChart = null;
+
         // Get spending recommendations
         document.getElementById('predict-btn').addEventListener('click', function () {
             const income = document.getElementById('income-input').value;
@@ -155,7 +178,9 @@
                     const resultsDiv = document.getElementById('prediction-results');
                     if (data.error) {
                         resultsDiv.innerHTML = `<p class="error">${data.error}</p>`;
+                        document.getElementById('chart-container').style.display = 'none';
                     } else {
+                        // Display text recommendations
                         let html = '<h3>Recommended Monthly Limits</h3>';
                         data.forEach(item => {
                             html += `<div class="recommendation-item">
@@ -164,13 +189,95 @@
                             </div>`;
                         });
                         resultsDiv.innerHTML = html;
+
+                        // Show chart container
+                        document.getElementById('chart-container').style.display = 'block';
+
+                        // Create chart data
+                        const categories = data.map(item => item.category);
+                        const limitValues = data.map(item => item.limit);
+                        const countValues = data.map(item => item.count);
+
+                        // Create color arrays
+                        const backgroundColors = [
+                            'rgba(255, 99, 132, 0.2)',
+                            'rgba(54, 162, 235, 0.2)',
+                            'rgba(255, 206, 86, 0.2)',
+                            'rgba(75, 192, 192, 0.2)',
+                            'rgba(153, 102, 255, 0.2)'
+                        ];
+
+                        const borderColors = [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ];
+
+                        // Create or update the charts
+                        createOrUpdateChart('limit-chart', 'Spending Limits by Category', categories, limitValues,
+                            backgroundColors, borderColors, '₹', limitChart);
+
+                        createOrUpdateChart('count-chart', 'Expected Transactions by Category', categories, countValues,
+                            backgroundColors, borderColors, '', countChart);
                     }
                 })
                 .catch(error => {
                     console.error('Error getting predictions:', error);
                     document.getElementById('prediction-results').innerHTML = '<p class="error">Failed to get recommendations</p>';
+                    document.getElementById('chart-container').style.display = 'none';
                 });
         });
+
+        // Function to create or update a chart
+        function createOrUpdateChart(canvasId, title, labels, data, bgColors, borderColors, prefix, chartInstance) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+
+            // Destroy existing chart if it exists
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // Create new chart
+            const newChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: title,
+                        data: data,
+                        backgroundColor: bgColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return prefix + value;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return `${context.dataset.label}: ${prefix}${context.raw}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Return the new chart instance
+            return newChart;
+        }
 
         // Check login status when page loads
         checkLoginStatus();

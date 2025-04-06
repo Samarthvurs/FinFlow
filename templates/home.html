@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FinFlow - Smart Finance</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
+    <meta name="theme-color" content="#007bff" />
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192x192.png') }}" />
 </head>
 
 <body>
@@ -13,24 +16,50 @@
         <h1>FinFlow</h1>
         <nav id="main-nav">
             <a href="/">Home</a>
-            <a href="/page1">Weekly Summary</a>
-            <a href="/page2">Monthly Summary</a>
             <a href="/login" id="login-link">Login</a>
             <a href="/signup" id="signup-link">Sign Up</a>
+            <a href="/page1" id="weekly-link" style="display: none;">Weekly Summary</a>
+            <a href="/page2" id="monthly-link" style="display: none;">Monthly Summary</a>
+            <a href="/payment" id="payment-link" style="display: none;">Connect Razorpay</a>
             <a href="#" id="logout-link" style="display: none;">Logout</a>
         </nav>
     </header>
 
     <main class="container">
+        <div id="offline-alert" style="display: none;" class="alert">
+            You are currently offline. Some features may be limited.
+        </div>
+
+        <div id="about-app" class="full-width-box">
+            <h2>Welcome to FinFlow</h2>
+            <p>An AI-powered expenditure tracking software designed to help you manage your finances efficiently.</p>
+
+            <div class="app-features">
+                <div class="feature-box">
+                    <h3>Track Your Spending</h3>
+                    <p>Monitor your expenses by category and get a clear view of where your money is going.</p>
+                </div>
+                <div class="feature-box">
+                    <h3>AI-Powered Insights</h3>
+                    <p>Get personalized spending recommendations based on your income and spending patterns.</p>
+                </div>
+                <div class="feature-box">
+                    <h3>Razorpay Integration</h3>
+                    <p>Connect your Razorpay account to automatically import transactions and keep your spending data up
+                        to date.</p>
+                </div>
+            </div>
+
+            <div class="cta-buttons">
+                <a href="/login" class="btn btn-primary">Login</a>
+                <a href="/signup" class="btn">Sign Up</a>
+                <button id="install-button" class="btn" style="display: none;">Install App</button>
+            </div>
+        </div>
+
         <div id="welcome-message" class="full-width-box" style="display: none;">
             <h2>Welcome back, <span id="user-email">User</span>!</h2>
             <p>Here's your financial overview for today.</p>
-        </div>
-
-        <div id="not-logged-in" class="full-width-box">
-            <h2>Welcome to FinFlow</h2>
-            <p>Please <a href="/login">login</a> or <a href="/signup">sign up</a> to access your financial dashboard.
-            </p>
         </div>
 
         <div id="dashboard" style="display: none;">
@@ -50,41 +79,186 @@
             </div>
             <div class="full-width-box">
                 <p>SUMMARY</p>
-                <a href="/page1">WEEKLY SUMMARY</a>
-                <a href="/page2">MONTHLY SUMMARY</a>
+                <a href="/page1" class="btn">WEEKLY SUMMARY</a>
+                <a href="/page2" class="btn">MONTHLY SUMMARY</a>
+                <a href="/payment" class="btn">CONNECT RAZORPAY</a>
             </div>
         </div>
     </main>
 
     <script>
+        // Register service worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(function (registration) {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    }, function (err) {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
+        // Handle offline status
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        function updateOnlineStatus() {
+            const offlineAlert = document.getElementById('offline-alert');
+            if (navigator.onLine) {
+                offlineAlert.style.display = 'none';
+                // Reload data if we're back online
+                if (localStorage.getItem('isLoggedIn') === 'true') {
+                    fetchSummaryData();
+                }
+            } else {
+                offlineAlert.style.display = 'block';
+            }
+        }
+
+        // Check online status on page load
+        updateOnlineStatus();
+
+        // PWA installation
+        let deferredPrompt;
+        const installButton = document.getElementById('install-button');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            // Show the install button
+            installButton.style.display = 'inline-block';
+        });
+
+        installButton.addEventListener('click', (e) => {
+            // Show the installation prompt
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                // Wait for the user to respond to the prompt
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    } else {
+                        console.log('User dismissed the install prompt');
+                    }
+                    deferredPrompt = null;
+                    installButton.style.display = 'none';
+                });
+            }
+        });
+
         // Check if user is logged in
         function checkLoginStatus() {
-            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-            const userEmail = localStorage.getItem('userEmail') || 'User';
+            // Try to get auth status from backend first
+            fetch('/api/me')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.authenticated) {
+                        // User is authenticated with backend
+                        handleLoggedInUser(data.user);
+                    } else {
+                        // Fallback to localStorage for offline support
+                        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+                        if (isLoggedIn) {
+                            // Show UI as logged in but with limited functionality
+                            const userEmail = localStorage.getItem('userEmail') || 'User';
+                            handleLoggedInUser({
+                                email: userEmail,
+                                monthly_income: localStorage.getItem('monthlyIncome') || '5000',
+                                monthly_limit: localStorage.getItem('monthlyLimit') || '5000'
+                            });
+                        } else {
+                            // User is not logged in
+                            handleLoggedOutUser();
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Auth check error:', error);
+                    // Fallback to localStorage for offline support
+                    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+                    if (isLoggedIn) {
+                        const userEmail = localStorage.getItem('userEmail') || 'User';
+                        handleLoggedInUser({
+                            email: userEmail,
+                            monthly_income: localStorage.getItem('monthlyIncome') || '5000',
+                            monthly_limit: localStorage.getItem('monthlyLimit') || '5000'
+                        });
+                    } else {
+                        handleLoggedOutUser();
+                    }
+                });
+        }
 
-            // Update UI based on login status
-            document.getElementById('login-link').style.display = isLoggedIn ? 'none' : 'inline-block';
-            document.getElementById('signup-link').style.display = isLoggedIn ? 'none' : 'inline-block';
-            document.getElementById('logout-link').style.display = isLoggedIn ? 'inline-block' : 'none';
-
-            document.getElementById('welcome-message').style.display = isLoggedIn ? 'block' : 'none';
-            document.getElementById('not-logged-in').style.display = isLoggedIn ? 'none' : 'block';
-            document.getElementById('dashboard').style.display = isLoggedIn ? 'block' : 'none';
-
-            document.getElementById('user-email').textContent = userEmail;
-
-            // Only fetch data if logged in
-            if (isLoggedIn) {
-                fetchSummaryData();
+        function handleLoggedInUser(user) {
+            // Store user info in localStorage for offline access
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userEmail', user.email);
+            localStorage.setItem('monthlyIncome', user.monthly_income);
+            if (user.monthly_limit) {
+                localStorage.setItem('monthlyLimit', user.monthly_limit);
             }
+
+            // Update UI for logged in user
+            document.getElementById('login-link').style.display = 'none';
+            document.getElementById('signup-link').style.display = 'none';
+            document.getElementById('logout-link').style.display = 'inline-block';
+            document.getElementById('payment-link').style.display = 'inline-block';
+            document.getElementById('weekly-link').style.display = 'inline-block';
+            document.getElementById('monthly-link').style.display = 'inline-block';
+
+            document.getElementById('welcome-message').style.display = 'block';
+            document.getElementById('about-app').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+
+            document.getElementById('user-email').textContent = user.email;
+
+            // Fetch data
+            fetchSummaryData();
+        }
+
+        function handleLoggedOutUser() {
+            document.getElementById('login-link').style.display = 'inline-block';
+            document.getElementById('signup-link').style.display = 'inline-block';
+            document.getElementById('logout-link').style.display = 'none';
+            document.getElementById('payment-link').style.display = 'none';
+            document.getElementById('weekly-link').style.display = 'none';
+            document.getElementById('monthly-link').style.display = 'none';
+
+            document.getElementById('welcome-message').style.display = 'none';
+            document.getElementById('about-app').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'none';
         }
 
         // Logout functionality
         document.getElementById('logout-link').addEventListener('click', function (e) {
             e.preventDefault();
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('userEmail');
-            checkLoginStatus();
+
+            // Call logout API
+            fetch('/api/logout', {
+                method: 'POST'
+            })
+                .then(() => {
+                    // Clear localStorage
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userEmail');
+                    localStorage.removeItem('razorpayConnected');
+                    localStorage.removeItem('razorpayKeyId');
+                    localStorage.removeItem('lastSyncTime');
+                    localStorage.removeItem('monthlyIncome');
+                    localStorage.removeItem('monthlyLimit');
+
+                    // Update UI
+                    handleLoggedOutUser();
+                })
+                .catch(error => {
+                    console.error('Logout error:', error);
+                    // Still clear localStorage even if API fails
+                    localStorage.clear();
+                    handleLoggedOutUser();
+                });
         });
 
         // Fetch summary data from API
@@ -93,17 +267,89 @@
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('expenditure').textContent = '₹' + data.monthly_spent.toFixed(2);
-                    document.getElementById('income').textContent = '₹5000.00'; // Default value
-                    document.getElementById('balance').textContent = '₹' + data.amount_left.toFixed(2);
+
+                    // Use monthly income from localStorage
+                    const monthlyIncome = localStorage.getItem('monthlyIncome') || '5000';
+                    document.getElementById('income').textContent = '₹' + monthlyIncome;
+
+                    // Calculate remaining balance based on monthly limit
+                    const monthlyLimit = localStorage.getItem('monthlyLimit') || '5000';
+                    const amountLeft = parseFloat(monthlyLimit) - data.monthly_spent;
+                    document.getElementById('balance').textContent = '₹' + amountLeft.toFixed(2);
                 })
                 .catch(error => {
                     console.error('Error fetching summary:', error);
+
+                    // Use cached data if available
+                    const cachedMonthlySpent = localStorage.getItem('cachedMonthlySpent') || '0';
+                    document.getElementById('expenditure').textContent = '₹' + parseFloat(cachedMonthlySpent).toFixed(2);
+
+                    const monthlyIncome = localStorage.getItem('monthlyIncome') || '5000';
+                    document.getElementById('income').textContent = '₹' + monthlyIncome;
+
+                    const monthlyLimit = localStorage.getItem('monthlyLimit') || '5000';
+                    const amountLeft = parseFloat(monthlyLimit) - parseFloat(cachedMonthlySpent);
+                    document.getElementById('balance').textContent = '₹' + amountLeft.toFixed(2);
                 });
         }
 
         // Check login status when page loads
         checkLoginStatus();
     </script>
+
+    <style>
+        .app-features {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 30px 0;
+        }
+
+        .feature-box {
+            flex: 0 0 30%;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-box h3 {
+            color: #343a40;
+            margin-top: 0;
+        }
+
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0 10px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0069d9;
+        }
+
+        @media (max-width: 768px) {
+            .feature-box {
+                flex: 0 0 100%;
+            }
+        }
+
+        .alert {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+            border-left: 4px solid #ffeeba;
+        }
+    </style>
 </body>
 
 </html>
