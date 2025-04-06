@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connect Razorpay - FinFlow</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+
+<body>
+    <header>
+        <h1>Complete Your Setup</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/page1" id="weekly-link" style="display: none;">Weekly Summary</a>
+            <a href="/page2" id="monthly-link" style="display: none;">Monthly Summary</a>
+            <a href="/login" id="login-link" style="display: none;">Login</a>
+            <a href="#" id="logout-link">Logout</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div id="not-logged-in" class="full-width-box" style="display: none;">
+            <h2>Please Login</h2>
+            <p>You need to be logged in to complete your setup. Redirecting to login...</p>
+        </div>
+
+        <div id="content">
+            <div class="box" id="welcome-box">
+                <h2>Welcome to FinFlow!</h2>
+                <p id="welcome-message">Let's finish setting up your account to start tracking your finances.</p>
+
+                <div class="setup-step" id="expenditure-limit-section">
+                    <h3>Step 1: Set Your Monthly Expenditure Limit</h3>
+                    <p>Your monthly income: ₹<span id="user-income">5000</span></p>
+
+                    <div class="option-buttons">
+                        <button id="ai-limit-btn" class="btn">Use AI Recommendation</button>
+                        <button id="manual-limit-btn" class="btn">Set Manually</button>
+                    </div>
+
+                    <div id="manual-limit-form" style="display: none; margin-top: 20px;">
+                        <div class="form-group">
+                            <label for="manual-limit">Monthly Expenditure Limit (₹)</label>
+                            <input type="number" id="manual-limit" placeholder="Enter amount" min="100">
+                        </div>
+                        <button id="save-limit-btn" class="btn">Save Limit</button>
+                    </div>
+
+                    <div id="ai-recommendation" style="display: none; margin-top: 20px;">
+                        <p>Based on your monthly income of ₹<span id="income-value">5000</span>, we recommend:</p>
+                        <div class="recommendation-box">
+                            <p>Recommended monthly expenditure limit: ₹<span id="recommended-limit">0</span></p>
+                            <p>This is approximately <span id="limit-percentage">70</span>% of your income.</p>
+                            <button id="accept-recommendation-btn" class="btn">Accept Recommendation</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setup-step" id="razorpay-section" style="display: none;">
+                    <h3>Step 2: Connect Your Razorpay Account</h3>
+                    <p>Link your Razorpay account to automatically import your transactions into FinFlow.</p>
+
+                    <div id="account-status-box">
+                        <h4>Account Status</h4>
+                        <div id="account-status">
+                            <p>Not connected</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="account-form">
+                        <div class="form-group">
+                            <label for="api-key">Razorpay API Key</label>
+                            <input type="text" id="api-key" placeholder="rzp_test_..." required>
+                        </div>
+                        <div class="form-group">
+                            <label for="api-secret">Razorpay API Secret</label>
+                            <input type="password" id="api-secret" placeholder="Enter your API secret" required>
+                        </div>
+                        <div class="form-group">
+                            <button id="connect-btn" class="btn">Connect Account</button>
+                            <button id="skip-btn" class="btn btn-secondary">Skip for Now</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="connected-buttons" style="display: none;">
+                        <button id="sync-btn" class="btn">Sync Transactions</button>
+                        <button id="disconnect-btn" class="btn btn-danger">Disconnect Account</button>
+                        <button id="continue-btn" class="btn btn-primary">Continue to Dashboard</button>
+                    </div>
+                </div>
+
+                <div class="setup-step" id="recurring-expenses-section" style="display: none;">
+                    <h3>Step 3: Set Up Recurring Expenses</h3>
+                    <p>Add your regular monthly expenses to better track your budget.</p>
+
+                    <div class="recurring-expenses-list" id="recurring-expenses-list">
+                        <p>No recurring expenses set up yet.</p>
+                    </div>
+
+                    <form id="recurring-expense-form">
+                        <div class="form-group">
+                            <label for="expense-name">Expense Name</label>
+                            <input type="text" id="expense-name" placeholder="e.g. Rent, Netflix subscription" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-category">Category</label>
+                            <select id="expense-category" required>
+                                <option value="Food">Food</option>
+                                <option value="Transport">Transport</option>
+                                <option value="Shopping">Shopping</option>
+                                <option value="Utilities">Utilities</option>
+                                <option value="Entertainment">Entertainment</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-amount">Amount (₹)</label>
+                            <input type="number" id="expense-amount" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-day">Payment Day of Month</label>
+                            <input type="number" id="expense-day" min="1" max="31" value="1" required>
+                        </div>
+                        <button type="submit" class="btn">Add Recurring Expense</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="box" id="recent-transactions-box" style="display: none;">
+                <h2>Recent Imported Transactions</h2>
+                <div id="recent-transactions">
+                    <p>Connect your Razorpay account to see transactions</p>
+                </div>
+            </div>
+
+            <div class="box" id="help-box" style="display: none;">
+                <h2>How to Connect</h2>
+                <ol>
+                    <li>Log in to your <a href="https://dashboard.razorpay.com/" target="_blank">Razorpay Dashboard</a>
+                    </li>
+                    <li>Go to Settings &gt; API Keys</li>
+                    <li>Generate a new key pair or use existing keys</li>
+                    <li>Copy the API Key ID and Secret Key</li>
+                    <li>Paste them in the form above and click Connect</li>
+                </ol>
+                <p><strong>Note:</strong> Your API credentials are securely stored. We only use these to sync your
+                    transaction data.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Check if user is logged in
+        function checkLoginStatus() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const monthlyIncome = localStorage.getItem('monthlyIncome') || '5000';
+
+            if (!isLoggedIn) {
+                document.getElementById('not-logged-in').style.display = 'block';
+                document.getElementById('content').style.display = 'none';
+
+                // Redirect to login after a short delay
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                return;
+            }
+
+            // Update UI for logged in users
+            document.getElementById('login-link').style.display = 'none';
+            document.getElementById('logout-link').style.display = 'inline-block';
+            document.getElementById('weekly-link').style.display = 'inline-block';
+            document.getElementById('monthly-link').style.display = 'inline-block';
+
+            // Display user income
+            document.getElementById('user-income').textContent = monthlyIncome;
+            document.getElementById('income-value').textContent = monthlyIncome;
+
+            // Calculate recommended limit (70% of income)
+            const recommendedLimit = Math.round(parseFloat(monthlyIncome) * 0.7);
+            document.getElementById('recommended-limit').textContent = recommendedLimit;
+
+            // Check if user already has set a limit
+            const monthlyLimit = localStorage.getItem('monthlyLimit');
+            if (monthlyLimit) {
+                // Skip to Razorpay section
+                document.getElementById('expenditure-limit-section').style.display = 'none';
+                document.getElementById('razorpay-section').style.display = 'block';
+                document.getElementById('recent-transactions-box').style.display = 'block';
+                document.getElementById('help-box').style.display = 'block';
+
+                // Check Razorpay connection status
+                checkConnectionStatus();
+            }
+        }
+
+        // Logout functionality
+        document.getElementById('logout-link').addEventListener('click', function (e) {
+            e.preventDefault();
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('razorpayConnected');
+            localStorage.removeItem('razorpayKeyId');
+            localStorage.removeItem('lastSyncTime');
+            window.location.href = '/';
+        });
+
+        // AI Recommendation button
+        document.getElementById('ai-limit-btn').addEventListener('click', function () {
+            document.getElementById('manual-limit-form').style.display = 'none';
+            document.getElementById('ai-recommendation').style.display = 'block';
+        });
+
+        // Manual Limit button
+        document.getElementById('manual-limit-btn').addEventListener('click', function () {
+            document.getElementById('ai-recommendation').style.display = 'none';
+            document.getElementById('manual-limit-form').style.display = 'block';
+        });
+
+        // Save manual limit
+        document.getElementById('save-limit-btn').addEventListener('click', function () {
+            const limit = document.getElementById('manual-limit').value;
+
+            if (!limit || isNaN(parseFloat(limit)) || parseFloat(limit) <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+
+            // Save limit and proceed
+            localStorage.setItem('monthlyLimit', limit);
+            proceedToRazorpay();
+        });
+
+        // Accept AI recommendation
+        document.getElementById('accept-recommendation-btn').addEventListener('click', function () {
+            const limit = document.getElementById('recommended-limit').textContent;
+            localStorage.setItem('monthlyLimit', limit);
+            proceedToRazorpay();
+        });
+
+        // Function to proceed to Razorpay section
+        function proceedToRazorpay() {
+            document.getElementById('expenditure-limit-section').style.display = 'none';
+            document.getElementById('razorpay-section').style.display = 'block';
+            document.getElementById('recent-transactions-box').style.display = 'block';
+            document.getElementById('help-box').style.display = 'block';
+
+            // Check Razorpay connection status
+            checkConnectionStatus();
+        }
+
+        // Skip button
+        document.getElementById('skip-btn').addEventListener('click', function () {
+            window.location.href = '/';
+        });
+
+        // Check Razorpay connection status
+        function checkConnectionStatus() {
+            const accountConnected = localStorage.getItem('razorpayConnected') === 'true';
+            const accountStatus = document.getElementById('account-status');
+            const accountForm = document.getElementById('account-form');
+            const connectedButtons = document.getElementById('connected-buttons');
+
+            if (accountConnected) {
+                // Show connected status
+                accountStatus.innerHTML = `
+                    <div class="connected-status">
+                        <span class="status-indicator connected"></span>
+                        <p><strong>Connected</strong> - Your Razorpay account is linked</p>
+                        <p class="api-key-display">API Key: ${localStorage.getItem('razorpayKeyId') || 'Unknown'}</p>
+                        <p>Last synced: ${localStorage.getItem('lastSyncTime') || 'Never'}</p>
+                    </div>
+                `;
+
+                // Show connected buttons
+                accountForm.style.display = 'none';
+                connectedButtons.style.display = 'block';
+
+                // Load recent transactions
+                loadRecentTransactions();
+            } else {
+                // Show disconnected status
+                accountStatus.innerHTML = `
+                    <div class="connected-status">
+                        <span class="status-indicator disconnected"></span>
+                        <p><strong>Not Connected</strong> - Please connect your Razorpay account</p>
+                    </div>
+                `;
+
+                // Show connection form
+                accountForm.style.display = 'block';
+                connectedButtons.style.display = 'none';
+
+                // Show placeholder for transactions
+                document.getElementById('recent-transactions').innerHTML =
+                    '<p>Connect your Razorpay account to see transactions</p>';
+            }
+        }
+
+        // Connect Razorpay account
+        document.getElementById('connect-btn').addEventListener('click', function () {
+            const apiKey = document.getElementById('api-key').value;
+            const apiSecret = document.getElementById('api-secret').value;
+
+            if (!apiKey || !apiSecret) {
+                alert('Please enter both API Key and Secret');
+                return;
+            }
+
+            // Disable button while connecting
+            this.disabled = true;
+            this.textContent = 'Connecting...';
+
+            // Call API to validate and store credentials
+            fetch('/api/connect-razorpay', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ key_id: apiKey, key_secret: apiSecret })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Store connection info
+                        localStorage.setItem('razorpayConnected', 'true');
+                        localStorage.setItem('razorpayKeyId', apiKey);
+                        localStorage.setItem('lastSyncTime', new Date().toLocaleString());
+
+                        alert('Successfully connected to Razorpay!');
+
+                        // Update UI
+                        checkConnectionStatus();
+
+                        // Start initial sync
+                        syncTransactions();
+                    } else {
+                        throw new Error(data.message || 'Failed to connect');
+                    }
+                })
+                .catch(error => {
+                    alert('Error connecting to Razorpay: ' + error.message);
+                    console.error('Connection error:', error);
+                })
+                .finally(() => {
+                    // Re-enable button
+                    this.disabled = false;
+                    this.textContent = 'Connect Account';
+                });
+        });
+
+        // Continue to dashboard button
+        document.getElementById('continue-btn').addEventListener('click', function () {
+            proceedToRecurringExpenses();
+        });
+
+        // Sync transactions
+        document.getElementById('sync-btn').addEventListener('click', syncTransactions);
+
+        function syncTransactions() {
+            const syncBtn = document.getElementById('sync-btn');
+
+            // Disable button while syncing
+            syncBtn.disabled = true;
+            syncBtn.textContent = 'Syncing...';
+
+            // Call API to sync transactions
+            fetch('/api/sync-razorpay-transactions')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update last sync time
+                        localStorage.setItem('lastSyncTime', new Date().toLocaleString());
+
+                        // Reload transactions
+                        loadRecentTransactions();
+
+                        alert(`Successfully synced ${data.count} transactions!`);
+                    } else {
+                        throw new Error(data.message || 'Failed to sync transactions');
+                    }
+                })
+                .catch(error => {
+                    alert('Error syncing transactions: ' + error.message);
+                    console.error('Sync error:', error);
+                })
+                .finally(() => {
+                    // Re-enable button
+                    syncBtn.disabled = false;
+                    syncBtn.textContent = 'Sync Transactions';
+
+                    // Update connection status to show updated sync time
+                    checkConnectionStatus();
+                });
+        }
+
+        // Disconnect account
+        document.getElementById('disconnect-btn').addEventListener('click', function () {
+            if (confirm('Are you sure you want to disconnect your Razorpay account?')) {
+                // Call API to remove credentials
+                fetch('/api/disconnect-razorpay', {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Clear local storage
+                            localStorage.removeItem('razorpayConnected');
+                            localStorage.removeItem('razorpayKeyId');
+                            localStorage.removeItem('lastSyncTime');
+
+                            alert('Successfully disconnected Razorpay account');
+
+                            // Update UI
+                            checkConnectionStatus();
+                        } else {
+                            throw new Error(data.message || 'Failed to disconnect');
+                        }
+                    })
+                    .catch(error => {
+                        alert('Error disconnecting account: ' + error.message);
+                        console.error('Disconnect error:', error);
+                    });
+            }
+        });
+
+        // Load recent transactions from Razorpay
+        function loadRecentTransactions() {
+            if (localStorage.getItem('razorpayConnected') !== 'true') {
+                return;
+            }
+
+            const transactionsContainer = document.getElementById('recent-transactions');
+            transactionsContainer.innerHTML = '<p>Loading transactions...</p>';
+
+            fetch('/api/razorpay-transactions')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.length) {
+                        transactionsContainer.innerHTML = '<p>No transactions found. Click "Sync Transactions" to import from Razorpay.</p>';
+                        return;
+                    }
+
+                    let html = '<table><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th></tr></thead><tbody>';
+
+                    data.slice(0, 10).forEach(txn => {
+                        html += `<tr>
+                            <td>${txn.created_at}</td>
+                            <td>${txn.description || txn.category}</td>
+                            <td>₹${parseFloat(txn.amount).toFixed(2)}</td>
+                            <td>${txn.status || 'completed'}</td>
+                        </tr>`;
+                    });
+
+                    html += '</tbody></table>';
+
+                    if (data.length > 10) {
+                        html += `<p class="more-transactions">Showing 10 of ${data.length} transactions</p>`;
+                    }
+
+                    transactionsContainer.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error loading transactions:', error);
+                    transactionsContainer.innerHTML = '<p>Error loading transactions. Please try again.</p>';
+                });
+        }
+
+        // Recurring expenses functionality
+        let recurringExpenses = JSON.parse(localStorage.getItem('recurringExpenses') || '[]');
+
+        function loadRecurringExpenses() {
+            const expensesList = document.getElementById('recurring-expenses-list');
+
+            if (recurringExpenses.length === 0) {
+                expensesList.innerHTML = '<p>No recurring expenses set up yet.</p>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>Name</th><th>Category</th><th>Amount</th><th>Day</th><th>Action</th></tr></thead><tbody>';
+
+            recurringExpenses.forEach((expense, index) => {
+                html += `<tr>
+                    <td>${expense.name}</td>
+                    <td>${expense.category}</td>
+                    <td>₹${parseFloat(expense.amount).toFixed(2)}</td>
+                    <td>${expense.day}</td>
+                    <td><button class="btn btn-small btn-danger" onclick="removeExpense(${index})">Remove</button></td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            expensesList.innerHTML = html;
+        }
+
+        function saveRecurringExpenses() {
+            localStorage.setItem('recurringExpenses', JSON.stringify(recurringExpenses));
+            loadRecurringExpenses();
+        }
+
+        function removeExpense(index) {
+            if (confirm('Are you sure you want to remove this expense?')) {
+                recurringExpenses.splice(index, 1);
+                saveRecurringExpenses();
+            }
+        }
+
+        // Handle recurring expense form submission
+        document.getElementById('recurring-expense-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const name = document.getElementById('expense-name').value;
+            const category = document.getElementById('expense-category').value;
+            const amount = document.getElementById('expense-amount').value;
+            const day = document.getElementById('expense-day').value;
+
+            // Add to recurring expenses
+            recurringExpenses.push({
+                name,
+                category,
+                amount: parseFloat(amount),
+                day: parseInt(day),
+                nextDue: getNextDueDate(parseInt(day))
+            });
+
+            // Save to localStorage
+            saveRecurringExpenses();
+
+            // Clear form
+            document.getElementById('expense-name').value = '';
+            document.getElementById('expense-amount').value = '';
+            document.getElementById('expense-day').value = '1';
+
+            alert('Recurring expense added successfully!');
+        });
+
+        // Helper function to get next due date
+        function getNextDueDate(day) {
+            const today = new Date();
+            let nextDue = new Date(today.getFullYear(), today.getMonth(), day);
+
+            // If the day has passed this month, set to next month
+            if (nextDue < today) {
+                nextDue = new Date(today.getFullYear(), today.getMonth() + 1, day);
+            }
+
+            return nextDue.toISOString().split('T')[0];
+        }
+
+        // Function to proceed to recurring expenses section
+        function proceedToRecurringExpenses() {
+            document.getElementById('razorpay-section').style.display = 'none';
+            document.getElementById('recurring-expenses-section').style.display = 'block';
+            loadRecurringExpenses();
+        }
+
+        // Check login status when page loads
+        checkLoginStatus();
+    </script>
+
+    <style>
+        .connected-status {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .connected {
+            background-color: #28a745;
+            box-shadow: 0 0 8px rgba(40, 167, 69, 0.8);
+        }
+
+        .disconnected {
+            background-color: #dc3545;
+            box-shadow: 0 0 8px rgba(220, 53, 69, 0.8);
+        }
+
+        .setup-step {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 20px;
+        }
+
+        .api-key-display {
+            font-family: monospace;
+            background-color: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background-color: #bd2130;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0069d9;
+        }
+
+        .option-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .recommendation-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .more-transactions {
+            text-align: center;
+            font-style: italic;
+            margin-top: 10px;
+        }
+    </style>
+</body>
+
+</html>

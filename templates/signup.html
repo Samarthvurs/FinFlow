@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up - FinFlow</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
+    <meta name="theme-color" content="#007bff" />
+</head>
+
+<body>
+    <header>
+        <h1>Create an Account</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/login">Login</a>
+            <a href="/signup">Sign Up</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div id="offline-alert" style="display: none;" class="alert">
+            You are currently offline. Signup requires an internet connection.
+        </div>
+
+        <div class="form-box">
+            <div id="error-message" class="error-message" style="display: none;"></div>
+            <form id="signupForm">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required minlength="6">
+                    <small>Password must be at least 6 characters long</small>
+                </div>
+                <div class="form-group">
+                    <label for="income">Monthly Income (₹)</label>
+                    <input type="number" id="income" name="income" required min="1000">
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn" id="signupBtn">Create Account</button>
+                    <div id="spinner" class="spinner" style="display: none;"></div>
+                </div>
+            </form>
+            <p>Already have an account? <a href="/login">Login</a></p>
+        </div>
+    </main>
+
+    <script>
+        // Register service worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(function (registration) {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    }, function (err) {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
+        // Check if user is already logged in
+        fetch('/api/me')
+            .then(response => response.json())
+            .then(data => {
+                if (data.authenticated) {
+                    // User is already logged in, redirect to home
+                    window.location.href = '/';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking authentication:', error);
+            });
+
+        // Handle offline status
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        function updateOnlineStatus() {
+            const offlineAlert = document.getElementById('offline-alert');
+            const signupBtn = document.getElementById('signupBtn');
+
+            if (navigator.onLine) {
+                offlineAlert.style.display = 'none';
+                signupBtn.disabled = false;
+            } else {
+                offlineAlert.style.display = 'block';
+                signupBtn.disabled = true;
+            }
+        }
+
+        // Check online status on page load
+        updateOnlineStatus();
+
+        document.getElementById('signupForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Show spinner, hide error
+            document.getElementById('spinner').style.display = 'inline-block';
+            document.getElementById('signupBtn').disabled = true;
+            document.getElementById('error-message').style.display = 'none';
+
+            // Get user details
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const income = document.getElementById('income').value;
+
+            // Validate password
+            if (password.length < 6) {
+                const errorMsg = document.getElementById('error-message');
+                errorMsg.textContent = 'Password must be at least 6 characters long';
+                errorMsg.style.display = 'block';
+                document.getElementById('spinner').style.display = 'none';
+                document.getElementById('signupBtn').disabled = false;
+                return;
+            }
+
+            // Call signup API
+            fetch('/api/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, email, password, income })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Store user info in localStorage for offline access
+                        localStorage.setItem('isLoggedIn', 'true');
+                        localStorage.setItem('userEmail', data.user.email);
+                        localStorage.setItem('monthlyIncome', data.user.monthly_income);
+
+                        // Show success message and redirect to payment page for setup
+                        alert('Account created successfully! Redirecting to complete your setup...');
+                        window.location.href = '/payment';
+                    } else {
+                        // Show error message
+                        const errorMsg = document.getElementById('error-message');
+                        errorMsg.textContent = data.message || 'Signup failed. Please try again.';
+                        errorMsg.style.display = 'block';
+                        document.getElementById('signupBtn').disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Signup error:', error);
+                    const errorMsg = document.getElementById('error-message');
+                    errorMsg.textContent = 'Network error. Please try again.';
+                    errorMsg.style.display = 'block';
+                    document.getElementById('signupBtn').disabled = false;
+                })
+                .finally(() => {
+                    document.getElementById('spinner').style.display = 'none';
+                });
+        });
+    </script>
+
+    <style>
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        small {
+            color: #6c757d;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .alert {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+            border-left: 4px solid #ffeeba;
+        }
+    </style>
+</body>
+
+</html>

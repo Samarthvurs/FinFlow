@@ -1,0 +1,47 @@
+import pandas as pd
+from datetime import datetime, timedelta
+import random
+
+# Categories
+CATEGORIES = ['Food', 'Transport', 'Shopping', 'Utilities', 'Entertainment']
+
+# Generate random transactions for the past month
+def generate_transactions(count=30):
+    transactions = []
+    today = datetime.now()
+    
+    for i in range(1, count + 1):
+        # Random date within the last 30 days
+        days_ago = random.randint(0, 30)
+        date = (today - timedelta(days=days_ago)).strftime("%Y-%m-%d")
+        
+        # Random category and amount
+        category = random.choice(CATEGORIES)
+        
+        # Different range of amounts for different categories
+        if category == "Food":
+            amount = random.randint(100, 500)
+        elif category == "Transport":
+            amount = random.randint(50, 300)
+        elif category == "Shopping":
+            amount = random.randint(500, 2000)
+        elif category == "Utilities":
+            amount = random.randint(200, 1000)
+        else:  # Entertainment
+            amount = random.randint(300, 800)
+            
+        transactions.append({
+            "id": i,
+            "category": category,
+            "amount": amount,
+            "created_at": date
+        })
+    
+    return transactions
+
+# Create and save demo transactions
+transactions = generate_transactions()
+df = pd.DataFrame(transactions)
+df.to_csv("classified_transactions.csv", index=False)
+
+print(f"Generated {len(transactions)} demo transactions and saved to classified_transactions.csv") 
