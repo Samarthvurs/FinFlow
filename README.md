@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # FinFlow - Smart Financial Management
 
 A personal finance management application focused on helping users track expenses, set budget limits, and receive insights into their spending patterns.
